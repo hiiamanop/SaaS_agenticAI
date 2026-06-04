@@ -1,0 +1,42 @@
+# Environment — never commit real secrets
+.env
+.env.local
+.env.*.local
+
+# Node modules (future services)
+node_modules/
+
+# Python (future AI services)
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Test coverage
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+
+# Terraform (future)
+*.tfstate
+*.tfstate.backup
+.terraform/
