@@ -1,0 +1,12 @@
+# infra/grafana/provisioning/dashboards/provider.yml
+apiVersion: 1
+
+providers:
+  - name: "ERP Dashboards"
+    orgId: 1
+    folder: "ERP"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards
