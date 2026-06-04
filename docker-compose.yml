@@ -284,6 +284,74 @@ services:
     restart: unless-stopped
     logging: *default-logging
 
+  # ============================================================
+  # IDENTITY & AUTHORIZATION
+  # ============================================================
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: erp_keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: ${POSTGRES_USER:-erp}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-erp_dev_password}
+      KC_HOSTNAME: keycloak.localhost
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    command:
+      - start-dev
+      - --import-realm
+    volumes:
+      - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - keycloak_data:/opt/keycloak/data
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - erp_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`keycloak.localhost`)"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+    restart: unless-stopped
+    logging: *default-logging
+
+  opa:
+    image: openpolicyagent/opa:0.68.0
+    container_name: erp_opa
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - --log-level=error
+      - /policies
+    volumes:
+      - ./infra/opa/policies:/policies:ro
+    ports:
+      - "8181:8181"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8181/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - erp_network
+    restart: unless-stopped
+    logging: *default-logging
+
 # ============================================================
 # VOLUMES & NETWORKS
 # ============================================================
@@ -298,6 +366,7 @@ volumes:
   loki_data:
   tempo_data:
   vault_data:
+  keycloak_data:
 
 networks:
   erp_network:

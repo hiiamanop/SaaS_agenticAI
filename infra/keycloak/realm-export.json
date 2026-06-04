@@ -1,0 +1,55 @@
+{
+  "realm": "erp",
+  "enabled": true,
+  "displayName": "ERP Platform",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 3600,
+  "roles": {
+    "realm": [
+      { "name": "owner", "description": "Tenant owner — full access" },
+      { "name": "admin", "description": "Tenant admin — manage users and settings" },
+      { "name": "manager", "description": "Department manager — manage own department" },
+      { "name": "staff", "description": "Regular staff — read/write own domain" },
+      { "name": "viewer", "description": "Read-only access" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "erp-backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "erp-backend-dev-secret",
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "erp-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost:3001/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost:3001"],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "dev-admin",
+      "enabled": true,
+      "email": "dev-admin@erp.local",
+      "firstName": "Dev",
+      "lastName": "Admin",
+      "credentials": [
+        { "type": "password", "value": "admin123", "temporary": false }
+      ],
+      "realmRoles": ["admin"]
+    }
+  ]
+}

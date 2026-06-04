@@ -19,6 +19,8 @@ SERVICES=(
   "Vault|curl -sf http://localhost:8200/v1/sys/health"
   "Prometheus|curl -sf http://localhost:9090/-/healthy"
   "Grafana|curl -sf http://localhost:3000/api/health | grep -q ok"
+  "Keycloak|curl -sf http://localhost:8080/health/ready"
+  "OPA|curl -sf http://localhost:8181/health"
 )
 
 tick() {

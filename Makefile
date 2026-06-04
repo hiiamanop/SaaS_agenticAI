@@ -1,4 +1,4 @@
-.PHONY: help dev down logs reset status ps setup topics
+.PHONY: help dev down logs reset status ps setup topics keycloak-setup migrate
 
 .DEFAULT_GOAL := help
 
@@ -48,3 +48,16 @@ setup: ## First-time setup: copy .env and seed Vault secrets
 
 topics: ## Create all Kafka topics in Redpanda
 	@bash scripts/bootstrap-topics.sh
+
+keycloak-setup: ## Show Keycloak admin console info
+	@echo "Keycloak admin: http://keycloak.localhost"
+	@echo "  Username: admin / Password: admin"
+	@echo "  ERP Realm: http://keycloak.localhost/realms/erp"
+	@echo "  Dev user:  dev-admin@erp.local / admin123"
+
+migrate: ## Run Alembic migrations for all services
+	@echo "Running migrations..."
+	@for svc in tenant-service subscription-service; do \
+		echo "  Migrating $$svc..."; \
+		cd services/$$svc && uv run alembic upgrade head && cd ../..; \
+	done
