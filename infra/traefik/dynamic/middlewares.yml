@@ -1,0 +1,24 @@
+# infra/traefik/dynamic/middlewares.yml
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - OPTIONS
+          - PUT
+          - POST
+          - DELETE
+          - PATCH
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowOriginList:
+          - "http://localhost:3001"
+          - "http://localhost:5173"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
