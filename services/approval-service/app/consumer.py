@@ -25,6 +25,7 @@ _consumer_task: asyncio.Task | None = None
 TOPIC_MAP = {
     "procurement.po.created": ("procurement_po", "po_id"),
     "accounting.invoice.created": ("accounting_invoice", "invoice_id"),
+    "agent.action.recommended": ("agent_action", "recommendation_id"),
 }
 
 

@@ -39,6 +39,7 @@ async def handle_order_created_event(db: AsyncSession, event: dict) -> None:
         tenant_id = uuid.UUID(tenant_id_str)
 
         reserved_items = []
+        low_stock_items = []
 
         for item in items:
             product_sku: str = item.get("product_sku", "")
@@ -87,6 +88,15 @@ async def handle_order_created_event(db: AsyncSession, event: dict) -> None:
                 "stock_id": str(stock.id),
             })
 
+            # Flag low stock once availability falls to/below the reorder point
+            if stock.qty_available <= stock.reorder_point:
+                low_stock_items.append({
+                    "product_sku": product_sku,
+                    "qty_available": stock.qty_available,
+                    "reorder_point": stock.reorder_point,
+                    "stock_id": str(stock.id),
+                })
+
         await db.commit()
 
         # Publish inventory.stock.reserved event
@@ -100,6 +110,15 @@ async def handle_order_created_event(db: AsyncSession, event: dict) -> None:
                     "tenant_id": tenant_id_str,
                     "reserved_items": reserved_items,
                 },
+            )
+
+        # Publish inventory.stock.low for each product that hit its reorder point
+        for low in low_stock_items:
+            await publish(
+                "inventory.stock.low",
+                "inventory.stock.low",
+                tenant_id_str,
+                {"tenant_id": tenant_id_str, **low},
             )
 
     except Exception as exc:
