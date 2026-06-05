@@ -79,7 +79,10 @@ async def approve_step(
 ):
     req = await _get_request(db, request_id)
     if req.status != ApprovalStatus.pending:
-        raise HTTPException(status_code=409, detail=f"Request already {req.status.value}")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Request already {getattr(req.status, 'value', req.status)}",
+        )
 
     steps = await load_steps(db, req.id)
     next_step = _next_pending_step(steps)
@@ -127,7 +130,10 @@ async def reject_step(
 ):
     req = await _get_request(db, request_id)
     if req.status != ApprovalStatus.pending:
-        raise HTTPException(status_code=409, detail=f"Request already {req.status.value}")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Request already {getattr(req.status, 'value', req.status)}",
+        )
 
     steps = await load_steps(db, req.id)
     next_step = _next_pending_step(steps)

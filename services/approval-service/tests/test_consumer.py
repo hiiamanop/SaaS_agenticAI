@@ -25,7 +25,7 @@ async def test_consumer_opens_workflow_on_po_created(client, db_session):
     )
     req = result.scalar_one()
     assert req.request_type == "procurement_po"
-    assert req.status.value == "pending"
+    assert req.status == "pending"
 
     steps = await db_session.execute(
         select(ApprovalStep).where(ApprovalStep.approval_request_id == req.id)

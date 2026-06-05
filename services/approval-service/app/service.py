@@ -106,6 +106,6 @@ async def _publish_request_outcome(req: ApprovalRequest, event_type: str) -> Non
             "tenant_id": str(req.tenant_id),
             "request_type": req.request_type,
             "reference_id": str(req.reference_id),
-            "status": req.status.value,
+            "status": getattr(req.status, "value", req.status),
         },
     )

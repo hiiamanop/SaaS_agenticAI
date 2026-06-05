@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
+from sqlalchemy import String
 from sqlmodel import SQLModel, Field
 
 
@@ -35,7 +36,7 @@ class Invoice(SQLModel, table=True):
     po_id: Optional[uuid.UUID] = Field(default=None, index=True)
     vendor_id: Optional[uuid.UUID] = Field(default=None, index=True)
     total_amount: Decimal = Field(default=Decimal("0.00"), decimal_places=2, max_digits=14)
-    status: InvoiceStatus = Field(default=InvoiceStatus.pending)
+    status: InvoiceStatus = Field(default=InvoiceStatus.pending, sa_type=String)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -66,7 +67,7 @@ class Payment(SQLModel, table=True):
     tenant_id: uuid.UUID = Field(index=True)
     invoice_id: uuid.UUID = Field(index=True)
     amount: Decimal = Field(default=Decimal("0.00"), decimal_places=2, max_digits=14)
-    method: PaymentMethod = Field(default=PaymentMethod.bank_transfer)
+    method: PaymentMethod = Field(default=PaymentMethod.bank_transfer, sa_type=String)
     reference: Optional[str] = Field(default=None, max_length=200)
     payment_date: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)

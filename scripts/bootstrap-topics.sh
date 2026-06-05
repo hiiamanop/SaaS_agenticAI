@@ -32,11 +32,15 @@ create_topic "inventory.stock.low"
 create_topic "inventory.stock.reserved"
 
 # Procurement
+create_topic "procurement.po.created"
+create_topic "procurement.po.received"
 create_topic "procurement.po.requested"
 create_topic "procurement.po.approved"
 create_topic "procurement.goods.received"
 
 # Accounting
+create_topic "accounting.invoice.created"
+create_topic "accounting.payment.recorded"
 create_topic "accounting.invoice.generated"
 create_topic "accounting.payment.processed"
 create_topic "accounting.budget.alert"

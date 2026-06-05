@@ -200,6 +200,96 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run pytest tests/ -v
 
+  test-procurement-service:
+    name: Test procurement-service
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp_dev_password
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: services/procurement-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Create procurement_db
+        run: |
+          PGPASSWORD=erp_dev_password psql -h localhost -U erp -d postgres \
+            -c "CREATE DATABASE procurement_db;" 2>/dev/null || true
+      - run: uv sync --extra test
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/ -v
+
+  test-accounting-service:
+    name: Test accounting-service
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp_dev_password
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: services/accounting-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Create accounting_db
+        run: |
+          PGPASSWORD=erp_dev_password psql -h localhost -U erp -d postgres \
+            -c "CREATE DATABASE accounting_db;" 2>/dev/null || true
+      - run: uv sync --extra test
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/ -v
+
+  test-approval-service:
+    name: Test approval-service
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp_dev_password
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: services/approval-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Create approval_db
+        run: |
+          PGPASSWORD=erp_dev_password psql -h localhost -U erp -d postgres \
+            -c "CREATE DATABASE approval_db;" 2>/dev/null || true
+      - run: uv sync --extra test
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/ -v
+
   lint:
     name: Lint (ruff)
     runs-on: ubuntu-latest

@@ -46,7 +46,7 @@ async def test_consumer_creates_invoice_on_po_created(client, db_session):
     invoice = result.scalar_one()
     assert invoice.total_amount == 150
     assert invoice.vendor_id == uuid.UUID(vendor_id)
-    assert invoice.status.value == "pending"
+    assert invoice.status == "pending"
 
     items_result = await db_session.execute(
         select(InvoiceLineItem).where(InvoiceLineItem.invoice_id == invoice.id)

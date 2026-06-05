@@ -65,7 +65,7 @@ async def record_payment(body: PaymentCreate, db: AsyncSession = Depends(get_db)
             "invoice_id": str(body.invoice_id),
             "tenant_id": str(body.tenant_id),
             "amount": str(payment.amount),
-            "method": payment.method.value,
+            "method": body.method.value,
         },
     )
     return payment
