@@ -43,10 +43,9 @@ async def client(db_session):
     async def override():
         yield db_session
 
-    with patch("app.events._producer", new=AsyncMock()):
-        app.dependency_overrides[get_db] = override
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as ac:
-            yield ac
-        app.dependency_overrides.clear()
+    app.dependency_overrides[get_db] = override
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac
+    app.dependency_overrides.clear()
