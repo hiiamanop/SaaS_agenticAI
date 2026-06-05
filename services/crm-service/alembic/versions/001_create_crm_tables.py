@@ -58,10 +58,10 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["contact_id"], ["contacts.id"], ondelete="SET NULL"),
     )
     op.create_index("ix_opportunities_tenant_id", "opportunities", ["tenant_id"])
     op.create_index("ix_opportunities_contact_id", "opportunities", ["contact_id"])
+    op.create_foreign_key("fk_opportunities_contact_id", "opportunities", "contacts", ["contact_id"], ["id"], ondelete="SET NULL")
 
     for table in ("leads", "contacts", "opportunities"):
         op.execute(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY')
