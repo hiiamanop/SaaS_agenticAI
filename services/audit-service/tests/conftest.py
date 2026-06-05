@@ -3,29 +3,31 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 from app.models import AuditLog  # noqa: F401
 
 TEST_DB_URL = "postgresql+asyncpg://erp:erp_dev_password@localhost:5432/audit_db"
 
+# Module level engine and session factory - reused across tests
+test_engine = create_async_engine(
+    TEST_DB_URL, echo=False, poolclass=NullPool
+)
+TestSession = async_sessionmaker(test_engine, expire_on_commit=False)
+
 
 @pytest_asyncio.fixture(autouse=True)
 async def reset_db():
-    engine = create_async_engine(TEST_DB_URL, echo=False)
-    async with engine.begin() as conn:
+    async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
-    await engine.dispose()
     yield
 
 
 @pytest_asyncio.fixture
 async def db_session(reset_db):
-    engine = create_async_engine(TEST_DB_URL, echo=False)
-    session_factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with session_factory() as session:
+    async with TestSession() as session:
         yield session
-    await engine.dispose()
 
 
 @pytest_asyncio.fixture

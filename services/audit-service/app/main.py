@@ -12,6 +12,7 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
     try:
+        await asyncio.sleep(0.1)  # Allow cancellation to propagate
         await task
     except asyncio.CancelledError:
         pass
