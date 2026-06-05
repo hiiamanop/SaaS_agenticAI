@@ -1,12 +1,24 @@
 import pytest
+from app.config import settings
 from app.gateway import get_gateway, ReorderContext
 from app.gateway.mock import MockProvider
 
 
 @pytest.mark.asyncio
-async def test_default_gateway_is_mock():
+async def test_gateway_selects_mock_when_configured():
+    # conftest's force_mock_provider pins this for the whole suite
+    assert settings.model_provider == "mock"
+    assert isinstance(get_gateway(), MockProvider)
+
+
+@pytest.mark.asyncio
+async def test_gateway_selects_ollama_when_configured(monkeypatch):
+    from app.gateway.ollama import OllamaProvider
+
+    monkeypatch.setattr(settings, "model_provider", "ollama")
     gw = get_gateway()
-    assert isinstance(gw, MockProvider)
+    assert isinstance(gw, OllamaProvider)
+    assert gw.model == settings.ollama_model
 
 
 @pytest.mark.asyncio

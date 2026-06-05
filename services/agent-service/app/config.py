@@ -13,10 +13,11 @@ class Settings(BaseSettings):
     keycloak_url: str = "http://localhost:8080"
     keycloak_realm: str = "erp"
 
-    # Model Gateway — "mock" (default, used in tests/CI) or "ollama"
-    model_provider: str = "mock"
+    # Model Gateway — "ollama" (default local runtime, llama3.1:8b on GPU) or
+    # "mock" (deterministic; forced in tests/CI, no Ollama/GPU required)
+    model_provider: str = "ollama"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2"
+    ollama_model: str = "llama3.1:8b"
 
     # Downstream service the agent calls to execute approved recommendations
     procurement_url: str = "http://localhost:8004"

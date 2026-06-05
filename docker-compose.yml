@@ -74,9 +74,14 @@ services:
   # ============================================================
   # LOCAL LLM (optional — agent platform). Start with:
   #   docker compose --profile ai up -d ollama
-  # then pull a model:  docker exec erp_ollama ollama pull llama3.2
+  # then pull a model:  docker exec erp_ollama ollama pull llama3.1:8b
   # Not part of `make dev`; the agent service falls back to its
   # deterministic Mock provider when MODEL_PROVIDER=mock (default).
+  #
+  # GPU: the deploy.reservations block below offloads inference to an
+  # NVIDIA GPU. Requires the NVIDIA Container Toolkit (on WSL2 it ships
+  # with Docker Desktop's GPU support). If you have no GPU, comment out
+  # the `deploy:` block — Ollama falls back to CPU automatically.
   # ============================================================
 
   ollama:
@@ -90,6 +95,13 @@ services:
     networks:
       - erp_network
     restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     logging: *default-logging
 
   # ============================================================

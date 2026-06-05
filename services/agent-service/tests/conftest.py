@@ -6,12 +6,23 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlmodel import SQLModel
 
+from app.config import settings
 from app.models import AgentRecommendation, AgentActionLog  # noqa: F401
 
 TEST_DB_URL = "postgresql+asyncpg://erp:erp_dev_password@localhost:5432/agent_db"
 
 TENANT_A = uuid.uuid4()
 TENANT_B = uuid.uuid4()
+
+
+@pytest_asyncio.fixture(autouse=True)
+def force_mock_provider():
+    """Tests/CI must never reach a real LLM — pin the deterministic mock
+    regardless of the runtime default (which is ``ollama``)."""
+    original = settings.model_provider
+    settings.model_provider = "mock"
+    yield
+    settings.model_provider = original
 
 
 @pytest_asyncio.fixture(autouse=True)
