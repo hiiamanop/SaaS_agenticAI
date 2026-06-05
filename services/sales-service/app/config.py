@@ -9,7 +9,9 @@ class Settings(BaseSettings):
     )
     service_name: str = "sales-service"
     debug: bool = False
-    kafka_bootstrap_servers: str = "localhost:19092"
+    kafka_brokers: str = "localhost:19092"
+    keycloak_url: str = "http://localhost:8080"
+    keycloak_realm: str = "erp"
 
 
 settings = Settings()
