@@ -58,20 +58,21 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
+        sa.ForeignKeyConstraint(["contact_id"], ["contacts.id"], ondelete="SET NULL"),
     )
     op.create_index("ix_opportunities_tenant_id", "opportunities", ["tenant_id"])
     op.create_index("ix_opportunities_contact_id", "opportunities", ["contact_id"])
 
     for table in ("leads", "contacts", "opportunities"):
-        op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-        op.execute(f"""
-            CREATE POLICY tenant_isolation ON {table}
+        op.execute(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY')
+        op.execute(f'''
+            CREATE POLICY tenant_isolation ON "{table}"
             USING (
                 tenant_id = current_setting('app.current_tenant_id', true)::uuid
                 OR current_setting('app.current_tenant_id', true) IS NULL
                 OR current_setting('app.current_tenant_id', true) = ''
             )
-        """)
+        ''')
 
 
 def downgrade():
