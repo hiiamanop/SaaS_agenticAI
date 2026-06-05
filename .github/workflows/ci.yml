@@ -140,6 +140,66 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run pytest tests/ -v
 
+  test-sales-service:
+    name: Test sales-service
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp_dev_password
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: services/sales-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Create sales_db
+        run: |
+          PGPASSWORD=erp_dev_password psql -h localhost -U erp -d postgres \
+            -c "CREATE DATABASE sales_db;" 2>/dev/null || true
+      - run: uv sync --extra test
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/ -v
+
+  test-inventory-service:
+    name: Test inventory-service
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: erp_dev_password
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: services/inventory-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Create inventory_db
+        run: |
+          PGPASSWORD=erp_dev_password psql -h localhost -U erp -d postgres \
+            -c "CREATE DATABASE inventory_db;" 2>/dev/null || true
+      - run: uv sync --extra test
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/ -v
+
   lint:
     name: Lint (ruff)
     runs-on: ubuntu-latest
