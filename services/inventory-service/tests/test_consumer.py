@@ -80,6 +80,6 @@ async def test_consumer_reserves_on_order_created(client, db_session):
     )
     movements = mvt_result.scalars().all()
     assert len(movements) == 1
-    assert movements[0].movement_type.value == "reservation"
+    assert movements[0].movement_type == "reservation"
     assert movements[0].quantity == 10
     assert movements[0].reference == order_id

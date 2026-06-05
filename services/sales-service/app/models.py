@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
+from sqlalchemy import String
 from sqlmodel import SQLModel, Field
 
 
@@ -21,7 +22,7 @@ class Quotation(SQLModel, table=True):
     tenant_id: uuid.UUID = Field(index=True)
     quotation_number: str = Field(max_length=50, index=True)
     contact_id: Optional[uuid.UUID] = Field(default=None, index=True)
-    status: QuotationStatus = Field(default=QuotationStatus.draft)
+    status: QuotationStatus = Field(default=QuotationStatus.draft, sa_type=String)
     total_amount: Decimal = Field(default=Decimal("0.00"), decimal_places=2, max_digits=14)
     valid_until: Optional[datetime] = None
     notes: Optional[str] = None
@@ -45,7 +46,7 @@ class Order(SQLModel, table=True):
     order_number: str = Field(max_length=50, index=True)
     quotation_id: Optional[uuid.UUID] = Field(default=None, index=True)
     contact_id: Optional[uuid.UUID] = Field(default=None, index=True)
-    status: OrderStatus = Field(default=OrderStatus.draft)
+    status: OrderStatus = Field(default=OrderStatus.draft, sa_type=String)
     total_amount: Decimal = Field(default=Decimal("0.00"), decimal_places=2, max_digits=14)
     notes: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

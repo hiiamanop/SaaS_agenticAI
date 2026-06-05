@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+from sqlalchemy import String
 from sqlmodel import SQLModel, Field
 
 
@@ -49,7 +50,7 @@ class StockMovement(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     tenant_id: uuid.UUID = Field(index=True)
     stock_id: uuid.UUID = Field(index=True)
-    movement_type: MovementType
+    movement_type: MovementType = Field(sa_type=String)
     quantity: int
     reference: Optional[str] = Field(default=None, max_length=200)
     notes: Optional[str] = None
