@@ -72,6 +72,27 @@ services:
     logging: *default-logging
 
   # ============================================================
+  # LOCAL LLM (optional — agent platform). Start with:
+  #   docker compose --profile ai up -d ollama
+  # then pull a model:  docker exec erp_ollama ollama pull llama3.2
+  # Not part of `make dev`; the agent service falls back to its
+  # deterministic Mock provider when MODEL_PROVIDER=mock (default).
+  # ============================================================
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: erp_ollama
+    profiles: ["ai"]
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - erp_network
+    restart: unless-stopped
+    logging: *default-logging
+
+  # ============================================================
   # EVENT STREAMING
   # ============================================================
 
@@ -360,6 +381,7 @@ volumes:
   postgres_data:
   redis_data:
   qdrant_data:
+  ollama_data:
   redpanda_data:
   prometheus_data:
   grafana_data:
