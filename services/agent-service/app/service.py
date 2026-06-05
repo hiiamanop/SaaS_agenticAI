@@ -11,15 +11,35 @@ from datetime import datetime
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.config import settings
 from app.events import publish
 from app.gateway import get_gateway, ReorderContext
-from app.models import AgentRecommendation, AgentActionLog, RecommendationStatus
+from app.models import (
+    AgentRecommendation,
+    AgentActionLog,
+    RecommendationStatus,
+    Decision,
+    ExecutionPolicy,
+)
+from app.policy import evaluate
 
 logger = logging.getLogger(__name__)
 
 AGENT_TYPE = "procurement_reorder"
+
+
+async def _load_policy(
+    db: AsyncSession, tenant_id: uuid.UUID, agent_type: str
+) -> ExecutionPolicy | None:
+    result = await db.execute(
+        select(ExecutionPolicy).where(
+            ExecutionPolicy.tenant_id == tenant_id,
+            ExecutionPolicy.agent_type == agent_type,
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def _log(db: AsyncSession, rec: AgentRecommendation, action: str, detail: str = "") -> None:
@@ -65,9 +85,27 @@ async def create_reorder_recommendation(
     db.add(rec)
     await db.flush()
     await _log(db, rec, "recommended", f"provider={gateway.name} qty={result.get('recommended_qty')}")
+
+    # Level-4 decision: auto-execute within the policy envelope, else escalate to HITL.
+    policy = await _load_policy(db, tenant_id, AGENT_TYPE)
+    pd = evaluate(policy, result)
+    rec.decision = pd.decision.value
+    rec.decision_reason = pd.reason
+    db.add(rec)
+    await _log(db, rec, "decided", f"{pd.decision.value}: {pd.reason}")
     await db.commit()
     await db.refresh(rec)
 
+    if pd.is_auto:
+        # Autonomous execution — no human in the loop for this action.
+        logger.info("agent: auto-executing recommendation %s (%s)", rec.id, pd.reason)
+        return await execute_recommendation(db, rec, mode="auto", publish_event=publish_event)
+
+    # Escalate: hand off to the Approval Center (existing Level-3 path).
+    rec.autonomy_mode = "hitl"
+    db.add(rec)
+    await db.commit()
+    await db.refresh(rec)
     if publish_event:
         await publish(
             "agent.action.recommended",
@@ -104,9 +142,16 @@ async def create_requisition(
 
 
 async def execute_recommendation(
-    db: AsyncSession, rec: AgentRecommendation, publish_event: bool = True
+    db: AsyncSession,
+    rec: AgentRecommendation,
+    mode: str = "hitl",
+    publish_event: bool = True,
 ) -> AgentRecommendation:
-    """Execute an approved recommendation by creating a procurement requisition."""
+    """Execute a recommendation by creating a procurement requisition.
+
+    ``mode`` records how the action was authorized: ``auto`` (Level-4 policy) or
+    ``hitl`` (human approval). It is persisted and emitted on the executed event.
+    """
     if rec.status == RecommendationStatus.executed:
         return rec
 
@@ -115,13 +160,14 @@ async def execute_recommendation(
 
     try:
         requisition_id = await create_requisition(
-            rec.tenant_id, sku, qty, reason=f"Auto-reorder by {AGENT_TYPE} agent"
+            rec.tenant_id, sku, qty, reason=f"Auto-reorder by {AGENT_TYPE} agent ({mode})"
         )
         rec.status = RecommendationStatus.executed
         rec.executed_ref_id = requisition_id
+        rec.autonomy_mode = mode
         rec.updated_at = datetime.utcnow()
         db.add(rec)
-        await _log(db, rec, "executed", f"requisition={requisition_id}")
+        await _log(db, rec, "executed", f"requisition={requisition_id} mode={mode}")
         await db.commit()
         await db.refresh(rec)
 
@@ -136,6 +182,7 @@ async def execute_recommendation(
                     "requisition_id": str(requisition_id),
                     "product_sku": sku,
                     "quantity": qty,
+                    "mode": mode,
                 },
             )
     except Exception as exc:

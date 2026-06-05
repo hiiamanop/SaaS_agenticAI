@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.events import start_producer, stop_producer
 from app.consumer import start_consumer, stop_consumer
-from app.routers import health, agents
+from app.routers import health, agents, policies
 
 
 @asynccontextmanager
@@ -26,3 +26,4 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(agents.router)
+app.include_router(policies.router)
