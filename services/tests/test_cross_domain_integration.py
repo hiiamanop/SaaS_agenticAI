@@ -37,8 +37,15 @@ async def http_client():
 
 
 @pytest.fixture(scope="function")
-async def warehouse_and_stock(http_client) -> Tuple[str, str]:
-    """Create warehouse and stock for testing."""
+async def warehouse_and_stock(http_client) -> Tuple[str, str, str]:
+    """Create a warehouse and a stock entry with a SKU unique to this test.
+
+    A unique SKU per test keeps reservations deterministic: the inventory
+    consumer matches stock by (tenant_id, product_sku), so reusing one SKU
+    across tests would let one test's order reserve against another's row.
+    """
+    sku = f"SKU-{uuid.uuid4().hex[:12]}"
+
     # Create warehouse
     warehouse_response = await http_client.post(
         f"{INVENTORY_SERVICE_URL}/warehouses/",
@@ -58,7 +65,7 @@ async def warehouse_and_stock(http_client) -> Tuple[str, str]:
         json={
             "tenant_id": TEST_TENANT_ID,
             "warehouse_id": warehouse_id,
-            "product_sku": "SKU-001",
+            "product_sku": sku,
             "product_name": "Integration Test Product",
             "qty_on_hand": 100,
             "reorder_point": 10,
@@ -67,7 +74,7 @@ async def warehouse_and_stock(http_client) -> Tuple[str, str]:
     assert stock_response.status_code == 201, f"Failed to create stock: {stock_response.text}"
     stock_id = stock_response.json()["id"]
 
-    yield warehouse_id, stock_id
+    yield warehouse_id, stock_id, sku
 
 
 class TestCrossDomainIntegration:
@@ -104,13 +111,13 @@ class TestCrossDomainIntegration:
     @pytest.mark.asyncio
     async def test_create_stock(self, http_client, warehouse_and_stock):
         """Step 2: Create stock entry."""
-        warehouse_id, stock_id = warehouse_and_stock
+        warehouse_id, stock_id, sku = warehouse_and_stock
 
         response = await http_client.get(f"{INVENTORY_SERVICE_URL}/stock/{stock_id}")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["product_sku"] == "SKU-001"
+        assert data["product_sku"] == sku
         assert data["qty_on_hand"] == 100
         assert data["qty_available"] == 100
         assert data["qty_reserved"] == 0
@@ -180,7 +187,7 @@ class TestCrossDomainIntegration:
     @pytest.mark.asyncio
     async def test_end_to_end_order_flow(self, http_client, warehouse_and_stock):
         """Complete end-to-end integration test."""
-        warehouse_id, stock_id = warehouse_and_stock
+        warehouse_id, stock_id, sku = warehouse_and_stock
 
         # Verify initial stock
         initial_stock = await http_client.get(f"{INVENTORY_SERVICE_URL}/stock/{stock_id}")
@@ -199,7 +206,7 @@ class TestCrossDomainIntegration:
                 "notes": "Integration test order",
                 "items": [
                     {
-                        "product_sku": "SKU-001",
+                        "product_sku": sku,
                         "product_name": "Integration Test Product",
                         "quantity": 10,
                         "unit_price": "100.00",
@@ -240,7 +247,7 @@ class TestCrossDomainIntegration:
     @pytest.mark.asyncio
     async def test_multiple_orders_reserve_correct_quantities(self, http_client, warehouse_and_stock):
         """Test that multiple orders correctly reserve stock."""
-        warehouse_id, stock_id = warehouse_and_stock
+        warehouse_id, stock_id, sku = warehouse_and_stock
 
         # Create and confirm first order (10 units)
         order1_response = await http_client.post(
@@ -251,7 +258,7 @@ class TestCrossDomainIntegration:
                 "quotation_id": None,
                 "items": [
                     {
-                        "product_sku": "SKU-001",
+                        "product_sku": sku,
                         "product_name": "Integration Test Product",
                         "quantity": 10,
                         "unit_price": "100.00",
@@ -274,7 +281,7 @@ class TestCrossDomainIntegration:
                 "quotation_id": None,
                 "items": [
                     {
-                        "product_sku": "SKU-001",
+                        "product_sku": sku,
                         "product_name": "Integration Test Product",
                         "quantity": 20,
                         "unit_price": "100.00",
