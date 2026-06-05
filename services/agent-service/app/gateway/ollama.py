@@ -11,11 +11,36 @@ from app.gateway.base import ModelGateway, ReorderContext
 logger = logging.getLogger(__name__)
 
 _SYSTEM = (
-    "You are a procurement reorder agent for an ERP system. Given current stock "
-    "for a product, decide how many units to reorder. Respond ONLY with JSON "
-    "matching: {\"product_sku\": str, \"recommended_qty\": int, "
-    "\"urgency\": \"normal\"|\"high\"|\"critical\", \"reason\": str}."
+    "You are a procurement reorder agent for an ERP system. Given the current "
+    "stock position for a product, decide how many units to reorder.\n"
+    "Rules:\n"
+    "- Order enough to bring projected on-hand COMFORTABLY ABOVE the reorder "
+    "point. Target roughly twice the reorder point as a safety buffer.\n"
+    "- recommended_qty MUST be a positive integer and must never leave stock at "
+    "or below the reorder point.\n"
+    "- urgency: 'critical' when available is 0, 'high' when available is well "
+    "below the reorder point, otherwise 'normal'.\n"
+    "Respond ONLY with JSON matching exactly: {\"product_sku\": str, "
+    "\"recommended_qty\": int, \"urgency\": \"normal\"|\"high\"|\"critical\", "
+    "\"reason\": str}."
 )
+
+
+def _coerce_qty(value, *, floor: int) -> int:
+    """Best-effort parse of the model's quantity into a sane positive int.
+
+    LLM output is untrusted: it may return a string, float, null, or something
+    below the reorder point. Clamp to at least ``floor`` (reorder_point + 1) so
+    a reorder never tops up to a level that immediately re-triggers low stock.
+    """
+    try:
+        qty = int(float(value))
+    except (TypeError, ValueError):
+        qty = floor
+    return max(qty, floor)
+
+
+_VALID_URGENCY = {"normal", "high", "critical"}
 
 
 class OllamaProvider(ModelGateway):
@@ -44,11 +69,27 @@ class OllamaProvider(ModelGateway):
             resp.raise_for_status()
             content = resp.json()["message"]["content"]
 
-        parsed = json.loads(content)
-        # Coerce / validate the fields we rely on
+        # The model is instructed to emit JSON, but never trust it: fall back to
+        # a deterministic recommendation if it returns malformed / non-JSON text.
+        try:
+            parsed = json.loads(content)
+            if not isinstance(parsed, dict):
+                raise ValueError("model returned non-object JSON")
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning(
+                "Ollama returned unparseable output (%s); falling back. Raw: %.200r",
+                exc, content,
+            )
+            parsed = {}
+
+        floor = ctx.reorder_point + 1
+        urgency = str(parsed.get("urgency", "")).lower()
+        if urgency not in _VALID_URGENCY:
+            urgency = "critical" if ctx.qty_available <= 0 else "normal"
+
         return {
-            "product_sku": parsed.get("product_sku", ctx.product_sku),
-            "recommended_qty": int(parsed.get("recommended_qty", ctx.reorder_point)),
-            "urgency": parsed.get("urgency", "normal"),
-            "reason": parsed.get("reason", ""),
+            "product_sku": parsed.get("product_sku") or ctx.product_sku,
+            "recommended_qty": _coerce_qty(parsed.get("recommended_qty"), floor=floor),
+            "urgency": urgency,
+            "reason": str(parsed.get("reason") or "")[:500],
         }
