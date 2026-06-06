@@ -25,8 +25,9 @@ def force_mock_provider():
     settings.model_provider = original
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture
 async def reset_db():
+    """Reset the test database.  Not autouse — only DB-backed tests need this."""
     engine = create_async_engine(TEST_DB_URL, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
