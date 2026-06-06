@@ -2,6 +2,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.consumer import start_consumer, stop_consumer
 from app.events import start_producer, stop_producer
 from app.routers import health, leads, contacts, opportunities
 
@@ -9,7 +10,9 @@ from app.routers import health, leads, contacts, opportunities
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await start_producer()
+    await start_consumer()
     yield
+    await stop_consumer()
     await stop_producer()
 
 

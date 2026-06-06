@@ -13,6 +13,7 @@ dependencies = [
     "structlog>=24.4.0",
     "erp-shared",
     "greenlet>=3.5.1",
+    "aiosqlite>=0.22.1",
 ]
 
 [project.optional-dependencies]

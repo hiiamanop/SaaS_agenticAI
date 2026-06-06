@@ -36,3 +36,11 @@ class CampaignUpdate(BaseModel):
     pain_points: Optional[str] = None
     value_proposition: Optional[str] = None
     status: Optional[CampaignStatus] = None
+
+
+class LandingPageFormSubmit(BaseModel):
+    """Contact data submitted via campaign landing page form."""
+    contact_name: str
+    contact_email: str
+    contact_phone: Optional[str] = None
+    company: Optional[str] = None
