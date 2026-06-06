@@ -8,6 +8,7 @@ from sqlalchemy import JSON, Column
 
 class CampaignStatus(str, Enum):
     draft = "draft"
+    approved = "approved"
     active = "active"
     paused = "paused"
     completed = "completed"
